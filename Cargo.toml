@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-eframe = "0.28"
-egui = "0.28"
-egui_extras = { version = "0.28", features = ["image"] } # Ini yang bener buat gambar
-image = { version = "0.24", features = ["png"] } # Tambahin ini juga biar bisa baca PNG
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-rfd = "0.14"
-rodio = "0.17"
+eframe = "*"
+egui = "*"
+egui_extras = { version = "*", features = ["all_loaders"] }
+image = { version = "*", features = ["png"] }
+serde = { version = "*", features = ["derive"] }
+serde_json = "*"
+rfd = "*"
+rodio = { version = "0.20", features = ["wav"] }
