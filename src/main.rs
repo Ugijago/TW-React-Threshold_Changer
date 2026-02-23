@@ -1,23 +1,11 @@
-/* ================================================================
-        UGIE'S ANTYLAZY v2.5 - CUTTER ENGINE + AUTO BACKUP
-        (Ko-fi Donation Integrated)
-================================================================ */
+mod models;
+mod patcher;
 
 use eframe::egui;
+use models::{GameType, PatcherConfig};
 use std::fs;
 use std::io::Cursor;
 use std::path::PathBuf;
-use serde::{Serialize, Deserialize};
-
-#[derive(Serialize, Deserialize, Default)]
-struct PatcherConfig {
-    path_attila: Option<PathBuf>,
-    path_rome2: Option<PathBuf>,
-    path_britain: Option<PathBuf>,
-}
-
-#[derive(PartialEq, Clone, Copy, Debug)] 
-enum GameType { Attila, Rome2, Britain }
 
 struct UgieApp {
     selected_game: GameType,
@@ -30,7 +18,7 @@ struct UgieApp {
 
 impl UgieApp {
     fn load() -> Self {
-        let config = if let Ok(data) = fs::read_to_string("antylazy.ini") {
+        let config = if let Ok(data) = fs::read_to_string("itc_config.ini") {
             serde_json::from_str(&data).unwrap_or_default()
         } else {
             PatcherConfig::default()
@@ -39,8 +27,8 @@ impl UgieApp {
         Self {
             selected_game: GameType::Attila,
             config,
-            percentage: 25.0, 
-            status_msg: "READY".to_string(),
+            percentage: 25.0,
+            status_msg: "SYSTEM READY".to_string(),
             is_error: false,
             show_wrong_folder_popup: false,
         }
@@ -62,7 +50,15 @@ impl UgieApp {
 
     fn save_config(&self) {
         if let Ok(data) = serde_json::to_string_pretty(&self.config) {
-            let _ = fs::write("antylazy.ini", data);
+            let _ = fs::write("itc_config.ini", data);
+        }
+    }
+
+    fn get_current_path(&self) -> Option<PathBuf> {
+        match self.selected_game {
+            GameType::Attila => self.config.path_attila.clone(),
+            GameType::Rome2 => self.config.path_rome2.clone(),
+            GameType::Britain => self.config.path_britain.clone(),
         }
     }
 }
@@ -70,6 +66,7 @@ impl UgieApp {
 impl eframe::App for UgieApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         
+        // POPUP ERROR
         if self.show_wrong_folder_popup {
             egui::Window::new("DIRECTORY ERROR").anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0]).show(ctx, |ui| {
                 ui.label(format!("The selected folder is not valid for {:?}.", self.selected_game));
@@ -82,51 +79,62 @@ impl eframe::App for UgieApp {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.add_space(10.0);
+            
+            // --- HEADER (Dari versi 2.5 Abang) ---
             ui.vertical_centered(|ui| {
-                ui.heading("Total War Anty Lazy V.1");
+                ui.add(
+                    egui::Image::new(egui::include_image!("../Assets/Icon/Logo.png"))
+                        .fit_to_exact_size(egui::vec2(110.0, 110.0))
+                );
+                ui.add_space(5.0);
+                ui.heading(egui::RichText::new("Total War Idle Threshold Changer").strong().size(15.0));
+                ui.label(egui::RichText::new("By Ugie").italics().color(egui::Color32::GRAY));
             });
+            
+            ui.add_space(10.0);
             ui.separator();
 
+            // --- 1. SELECT GAME ENGINE (Centering & Tint Logic) ---
             ui.add_space(10.0);
-            ui.label("1. Select Game:");
+            ui.label("1. Select Game Engine:");
             ui.horizontal(|ui| {
-                // Hitung: (Lebar Window 550 - (3 ikon * 90) - (2 spasi * 20)) / 2
                 let total_icons_width = (90.0 * 3.0) + (20.0 * 2.0);
                 let centering_space = (ui.available_width() - total_icons_width) / 2.0;
                 
-                ui.add_space(centering_space); // Dorong ke tengah
+                ui.add_space(centering_space); 
                 ui.spacing_mut().item_spacing = egui::vec2(20.0, 0.0);
 
-                // --- ICON ATTILA ---
-                let att_img = egui::Image::new(egui::include_image!("../assets/Icon/Attila.png"))
+                // ATTILA
+                let att_img = egui::Image::new(egui::include_image!("../Assets/Icon/Attila.png"))
                     .fit_to_exact_size(egui::vec2(90.0, 90.0))
                     .tint(if self.selected_game == GameType::Attila { egui::Color32::WHITE } else { egui::Color32::GRAY });
-                if ui.add(egui::Button::image(att_img).frame(self.selected_game == GameType::Attila)).on_hover_text("Select Attila").clicked() {
+                if ui.add(egui::Button::image(att_img).frame(self.selected_game == GameType::Attila)).clicked() {
                     self.selected_game = GameType::Attila;
                     self.play_audio(include_bytes!("../assets/Sound/Click.wav"));
                 }
 
-                // --- ICON ROME 2 ---
-                let rome_img = egui::Image::new(egui::include_image!("../assets/Icon/Rome2.png"))
+                // ROME 2
+                let rome_img = egui::Image::new(egui::include_image!("../Assets/Icon/Rome2.png"))
                     .fit_to_exact_size(egui::vec2(90.0, 90.0))
                     .tint(if self.selected_game == GameType::Rome2 { egui::Color32::WHITE } else { egui::Color32::GRAY });
-                if ui.add(egui::Button::image(rome_img).frame(self.selected_game == GameType::Rome2)).on_hover_text("Select Rome 2").clicked() {
+                if ui.add(egui::Button::image(rome_img).frame(self.selected_game == GameType::Rome2)).clicked() {
                     self.selected_game = GameType::Rome2;
                     self.play_audio(include_bytes!("../assets/Sound/Click.wav"));
                 }
 
-                // --- ICON BRITANNIA ---
-                let brit_img = egui::Image::new(egui::include_image!("../assets/Icon/Britain.png"))
+                // BRITAIN
+                let brit_img = egui::Image::new(egui::include_image!("../Assets/Icon/Britain.png"))
                     .fit_to_exact_size(egui::vec2(90.0, 90.0))
                     .tint(if self.selected_game == GameType::Britain { egui::Color32::WHITE } else { egui::Color32::GRAY });
-                if ui.add(egui::Button::image(brit_img).frame(self.selected_game == GameType::Britain)).on_hover_text("Select Britannia").clicked() {
+                if ui.add(egui::Button::image(brit_img).frame(self.selected_game == GameType::Britain)).clicked() {
                     self.selected_game = GameType::Britain;
                     self.play_audio(include_bytes!("../assets/Sound/Click.wav"));
                 }
             });
 
+            // --- 2. TARGET DIRECTORY ---
             ui.add_space(20.0);
-            ui.label("2. Game Installation Path:");
+            ui.label("2. Target Directory:");
             ui.horizontal(|ui| {
                 if ui.button("📁 Browse Folder").clicked() {
                     self.play_audio(include_bytes!("../assets/Sound/Click.wav"));
@@ -153,13 +161,7 @@ impl eframe::App for UgieApp {
                     }
                 }
 
-                let current_path = match self.selected_game {
-                    GameType::Attila => &self.config.path_attila,
-                    GameType::Rome2 => &self.config.path_rome2,
-                    GameType::Britain => &self.config.path_britain,
-                };
-
-                if let Some(p) = current_path {
+                if let Some(p) = self.get_current_path() {
                     ui.label(egui::RichText::new(" OK ").color(egui::Color32::GREEN).strong());
                     ui.label(egui::RichText::new(p.to_string_lossy()).size(12.0).strong());
                 } else {
@@ -167,8 +169,9 @@ impl eframe::App for UgieApp {
                 }
             });
 
+            // --- 3. SLIDER ---
             ui.add_space(20.0);
-            ui.label("3. Adjust Patch Percentage:");
+            ui.label("3. Adjust Idle Fatigue Threshold:");
             ui.horizontal(|ui| {
                 ui.add(egui::Slider::new(&mut self.percentage, 0.0..=100.0).suffix("%"));
                 if ui.button("SET DEFAULT").clicked() {
@@ -177,39 +180,58 @@ impl eframe::App for UgieApp {
                 }
             });
 
+            // --- 4. ACTION BUTTONS ---
             ui.add_space(30.0);
             ui.horizontal(|ui| {
-                let current_path = match self.selected_game {
-                    GameType::Attila => &self.config.path_attila,
-                    GameType::Rome2 => &self.config.path_rome2,
-                    GameType::Britain => &self.config.path_britain,
-                };
-
+                let current_path = self.get_current_path();
                 ui.add_enabled_ui(current_path.is_some(), |ui| {
                     if ui.add_sized([ui.available_width() / 2.0 - 5.0, 40.0], egui::Button::new(egui::RichText::new("APPLY PATCH").strong())).clicked() {
-                        self.execute_patch();
+                        if let Some(path) = &current_path {
+                            match patcher::execute_patch(self.selected_game, path, self.percentage) {
+                                Ok(msg) => {
+                                    self.status_msg = msg;
+                                    self.is_error = false;
+                                    self.play_audio(include_bytes!("../assets/Sound/Ding.wav"));
+                                }
+                                Err(err) => {
+                                    self.status_msg = err;
+                                    self.is_error = true;
+                                    self.play_audio(include_bytes!("../assets/Sound/Error.wav"));
+                                }
+                            }
+                        }
                     }
                     if ui.add_sized([ui.available_width(), 40.0], egui::Button::new(egui::RichText::new("RESTORE ORIGINAL").strong())).clicked() {
-                        self.execute_restore();
+                        if let Some(path) = &current_path {
+                            match patcher::execute_restore(path) {
+                                Ok(msg) => {
+                                    self.status_msg = msg;
+                                    self.is_error = false;
+                                    self.play_audio(include_bytes!("../assets/Sound/Ding.wav"));
+                                }
+                                Err(err) => {
+                                    self.status_msg = err;
+                                    self.is_error = true;
+                                }
+                            }
+                        }
                     }
                 });
             });
 
+            // --- FOOTER & TIP ME ---
             ui.add_space(20.0);
             ui.separator();
 
-            // --- BAGIAN STATUS & KO-FI (MODIFIKASI DI SINI) ---
             ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
                 ui.add_space(10.0);
                 
-                // Baris paling bawah: Link Donasi di kanan
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::BOTTOM), |ui| {
-                    if ui.button(egui::RichText::new("☕ Tip me ").strong().color(egui::Color32::WHITE)).on_hover_text("Support Me!").clicked() {
+                    if ui.button(egui::RichText::new("☕ Tip me ").strong().color(egui::Color32::WHITE)).on_hover_text("Support via Ko-fi").clicked() {
                         let _ = webbrowser::open("https://ko-fi.com/ugiejago");
                     }
                 });
 
-                // Status Message tetap di tengah bawah
                 let color = if self.is_error { egui::Color32::LIGHT_RED } else { egui::Color32::LIGHT_GREEN };
                 ui.label(egui::RichText::new(&self.status_msg).color(color).size(18.0).strong());
             });
@@ -217,137 +239,16 @@ impl eframe::App for UgieApp {
     }
 }
 
-// LOGIK CORE PATCHER KAMU (TIDAK ADA PERUBAHAN)
-impl UgieApp {
-    fn execute_patch(&mut self) {
-        let file_target = "empire.retail.dll";
-        let file_backup = "empire.retail.dll.bak";
-        
-        let folder = match self.selected_game {
-            GameType::Attila => &self.config.path_attila,
-            GameType::Rome2 => &self.config.path_rome2,
-            GameType::Britain => &self.config.path_britain,
-        };
-
-        if let Some(f) = folder {
-            let target_path = f.join(file_target);
-            let backup_path = f.join(file_backup);
-
-            if !backup_path.exists() {
-                if let Err(_) = fs::copy(&target_path, &backup_path) {
-                    self.play_audio(include_bytes!("../assets/Sound/Error.wav"));
-                    self.status_msg = "ERROR: Failed to create backup!".to_string();
-                    self.is_error = true;
-                    return;
-                }
-            }
-
-            if let Ok(mut data) = fs::read(&target_path) {
-                let (head, body_prefix, tail) = match self.selected_game {
-                    GameType::Attila => (
-                        vec![0x68, 0xA8, 0x34, 0xAC, 0x11, 0x8D, 0x44, 0x24, 0x18], 
-                        vec![0xC7, 0x44, 0x24, 0x18], 
-                        vec![0x50, 0x68, 0xC4, 0x35, 0xAC, 0x11]
-                    ),
-                    GameType::Rome2 => (
-                        vec![0x68, 0x68, 0x68, 0x74, 0x11, 0x8D, 0x44, 0x24, 0x18], 
-                        vec![0xC7, 0x44, 0x24, 0x18], 
-                        vec![0x50, 0x68, 0xC0, 0x68, 0x74, 0x11]
-                    ),
-                    GameType::Britain => (
-                        vec![0x68, 0x88, 0xA5, 0xC1, 0x11, 0x8D, 0x44, 0x24, 0x18],
-                        vec![0xC7, 0x44, 0x24, 0x18],
-                        vec![0x50, 0x68, 0xAC, 0xA6, 0xC1, 0x11]
-                    ),
-                };
-
-                let mut found = false;
-                let new_val_bytes = (self.percentage / 100.0).to_le_bytes();
-                let full_pattern_len = head.len() + body_prefix.len() + 4 + tail.len();
-                
-                if data.len() > full_pattern_len {
-                    for i in 0..(data.len() - full_pattern_len) {
-                        if &data[i..i+head.len()] == head.as_slice() {
-                            let body_pos = i + head.len();
-                            if &data[body_pos..body_pos+body_prefix.len()] == body_prefix.as_slice() {
-                                let val_pos = body_pos + body_prefix.len();
-                                let tail_pos = val_pos + 4;
-                                if &data[tail_pos..tail_pos+tail.len()] == tail.as_slice() {
-                                    data[val_pos..val_pos+4].copy_from_slice(&new_val_bytes);
-                                    found = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if found {
-                    if fs::write(&target_path, data).is_ok() {
-                        self.play_audio(include_bytes!("../assets/Sound/Ding.wav"));
-                        self.status_msg = format!("Successfully Patching {:?} To {:.0}%", self.selected_game, self.percentage);      
-                        self.is_error = false;
-                    } else {
-                        self.play_audio(include_bytes!("../assets/Sound/Error.wav"));
-                        self.status_msg = "ERROR: File is Write Protected!".to_string();
-                        self.is_error = true;
-                    }
-                } else {
-                    self.play_audio(include_bytes!("../assets/Sound/Error.wav"));
-                    self.status_msg = "ERROR: Unique Pattern Not Found!".to_string();
-                    self.is_error = true;
-                }
-            }
-        }
-    }
-
-    fn execute_restore(&mut self) {
-        let file_target = "empire.retail.dll";
-        let file_backup = "empire.retail.dll.bak";
-        
-        let folder = match self.selected_game {
-            GameType::Attila => &self.config.path_attila,
-            GameType::Rome2 => &self.config.path_rome2,
-            GameType::Britain => &self.config.path_britain,
-        };
-
-        if let Some(f) = folder {
-            let target_path = f.join(file_target);
-            let backup_path = f.join(file_backup);
-
-            if backup_path.exists() {
-                let _ = fs::remove_file(&target_path);
-                if let Ok(_) = fs::rename(&backup_path, &target_path) {
-                    self.play_audio(include_bytes!("../assets/Sound/Ding.wav"));
-                    self.status_msg = "RESTORE SUCCESS: Original file restored!".to_string();
-                    self.is_error = false;
-                    self.percentage = 25.0;
-                } else {
-                    self.play_audio(include_bytes!("../assets/Sound/Error.wav"));
-                    self.status_msg = "RESTORE ERROR: Access Denied!".to_string();
-                    self.is_error = true;
-                }
-            } else {
-                self.play_audio(include_bytes!("../assets/Sound/Click.wav"));
-                self.status_msg = "INFO: File is already original!".to_string();
-                self.is_error = false;
-                self.percentage = 25.0;
-            }
-        }
-    }
-}
-
 fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([550.0, 520.0])
-            .with_resizable(false)
-            .with_position(egui::pos2(600.0, 300.0)),
+            .with_inner_size([550.0, 600.0])
+            .with_resizable(false),
         ..Default::default()
     };
     
     eframe::run_native(
-        "UGIE'S TW Anty Lazy V.1", 
+        "Total War Idle Threshold Changer",
         options, 
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx); 
