@@ -4124,6 +4124,7 @@ dependencies = [
  "rodio",
  "serde",
  "serde_json",
+ "webbrowser",
 ]
 
 [[package]]

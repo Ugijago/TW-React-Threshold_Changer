@@ -1,6 +1,6 @@
 /* ================================================================
         UGIE'S ANTYLAZY v2.5 - CUTTER ENGINE + AUTO BACKUP
-        (Organized Assets Version)
+        (Ko-fi Donation Integrated)
 ================================================================ */
 
 use eframe::egui;
@@ -48,7 +48,6 @@ impl UgieApp {
 
     fn play_audio(&self, audio_bytes: &'static [u8]) {
         std::thread::spawn(move || {
-            // FIX: Menggunakan path absolut rodio agar tidak ada error unresolved import
             if let Ok((_stream, stream_handle)) = rodio::OutputStream::try_default() {
                 if let Ok(sink) = rodio::Sink::try_new(&stream_handle) {
                     let cursor = Cursor::new(audio_bytes);
@@ -84,20 +83,24 @@ impl eframe::App for UgieApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.add_space(10.0);
             ui.vertical_centered(|ui| {
-                ui.heading("UGIE'S ANTYLAZY v2.5");
+                ui.heading("Total War Anty Lazy V.1");
             });
             ui.separator();
 
             ui.add_space(10.0);
             ui.label("1. Select Game:");
             ui.horizontal(|ui| {
+                // Hitung: (Lebar Window 550 - (3 ikon * 90) - (2 spasi * 20)) / 2
+                let total_icons_width = (90.0 * 3.0) + (20.0 * 2.0);
+                let centering_space = (ui.available_width() - total_icons_width) / 2.0;
+                
+                ui.add_space(centering_space); // Dorong ke tengah
                 ui.spacing_mut().item_spacing = egui::vec2(20.0, 0.0);
 
                 // --- ICON ATTILA ---
                 let att_img = egui::Image::new(egui::include_image!("../assets/Icon/Attila.png"))
-                    .fit_to_exact_size(egui::vec2(90.0, 90.0)) // <--- PAKSA UKURAN DI SINI
+                    .fit_to_exact_size(egui::vec2(90.0, 90.0))
                     .tint(if self.selected_game == GameType::Attila { egui::Color32::WHITE } else { egui::Color32::GRAY });
-                
                 if ui.add(egui::Button::image(att_img).frame(self.selected_game == GameType::Attila)).on_hover_text("Select Attila").clicked() {
                     self.selected_game = GameType::Attila;
                     self.play_audio(include_bytes!("../assets/Sound/Click.wav"));
@@ -105,9 +108,8 @@ impl eframe::App for UgieApp {
 
                 // --- ICON ROME 2 ---
                 let rome_img = egui::Image::new(egui::include_image!("../assets/Icon/Rome2.png"))
-                    .fit_to_exact_size(egui::vec2(90.0, 90.0)) // <--- PAKSA UKURAN DI SINI
+                    .fit_to_exact_size(egui::vec2(90.0, 90.0))
                     .tint(if self.selected_game == GameType::Rome2 { egui::Color32::WHITE } else { egui::Color32::GRAY });
-
                 if ui.add(egui::Button::image(rome_img).frame(self.selected_game == GameType::Rome2)).on_hover_text("Select Rome 2").clicked() {
                     self.selected_game = GameType::Rome2;
                     self.play_audio(include_bytes!("../assets/Sound/Click.wav"));
@@ -115,9 +117,8 @@ impl eframe::App for UgieApp {
 
                 // --- ICON BRITANNIA ---
                 let brit_img = egui::Image::new(egui::include_image!("../assets/Icon/Britain.png"))
-                    .fit_to_exact_size(egui::vec2(90.0, 90.0)) // <--- PAKSA UKURAN DI SINI
+                    .fit_to_exact_size(egui::vec2(90.0, 90.0))
                     .tint(if self.selected_game == GameType::Britain { egui::Color32::WHITE } else { egui::Color32::GRAY });
-
                 if ui.add(egui::Button::image(brit_img).frame(self.selected_game == GameType::Britain)).on_hover_text("Select Britannia").clicked() {
                     self.selected_game = GameType::Britain;
                     self.play_audio(include_bytes!("../assets/Sound/Click.wav"));
@@ -194,11 +195,21 @@ impl eframe::App for UgieApp {
                 });
             });
 
-            ui.add_space(30.0);
+            ui.add_space(20.0);
             ui.separator();
 
-            ui.add_space(10.0);
-            ui.vertical_centered(|ui| {
+            // --- BAGIAN STATUS & KO-FI (MODIFIKASI DI SINI) ---
+            ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
+                ui.add_space(10.0);
+                
+                // Baris paling bawah: Link Donasi di kanan
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::BOTTOM), |ui| {
+                    if ui.button(egui::RichText::new("☕ Tip me ").strong().color(egui::Color32::WHITE)).on_hover_text("Support Me!").clicked() {
+                        let _ = webbrowser::open("https://ko-fi.com/ugiejago");
+                    }
+                });
+
+                // Status Message tetap di tengah bawah
                 let color = if self.is_error { egui::Color32::LIGHT_RED } else { egui::Color32::LIGHT_GREEN };
                 ui.label(egui::RichText::new(&self.status_msg).color(color).size(18.0).strong());
             });
@@ -206,7 +217,7 @@ impl eframe::App for UgieApp {
     }
 }
 
-// CORE LOGIC PATCHER (TIDAK BERUBAH)
+// LOGIK CORE PATCHER KAMU (TIDAK ADA PERUBAHAN)
 impl UgieApp {
     fn execute_patch(&mut self) {
         let file_target = "empire.retail.dll";
@@ -336,7 +347,7 @@ fn main() -> eframe::Result<()> {
     };
     
     eframe::run_native(
-        "UGIE'S ANTYLAZY", 
+        "UGIE'S TW Anty Lazy V.1", 
         options, 
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx); 
