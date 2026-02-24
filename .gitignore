@@ -4,3 +4,4 @@ antylazy.ini
 settings.json
 backup/
 backup patch/
+build.rs
