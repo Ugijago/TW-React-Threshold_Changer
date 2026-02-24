@@ -1,14 +1,6 @@
-# --- RUST ---
-/target
-Cargo.lock
-
-# --- CONFIG PRIBADI ---
-settings.json
+/target/
+itc_config.ini
 antylazy.ini
-
-# --- WINDOWS ---
-Thumbs.db
-desktop.ini
-*.pdb
-
-backup
+settings.json
+backup/
+backup patch/
