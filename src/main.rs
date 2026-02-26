@@ -50,20 +50,17 @@ impl UgieApp {
     }
 
     fn scan_current_values(&mut self) {
-        // Ambil params default buat game yang baru dipilih
         let default_params = match self.selected_game {
             GameType::Attila => &self.config.params_attila,
             GameType::Rome2 => &self.config.params_rome2,
             GameType::Britain => &self.config.params_britain,
         };
 
-        // Pasang dulu angka dari config/default (biar gak sisa data game sebelah)
         self.val_min = default_params.min_entities;
         self.val_ordered = default_params.ordered_mod;
         self.val_with_ammo = default_params.with_ammo_mod;
         self.val_no_ammo = default_params.no_ammo_mod;
 
-        // Baru cek path-nya, kalau ada foldernya, timpa pakai hasil scan asli dari DLL
         let current_path = match self.selected_game {
             GameType::Attila => &self.config.path_attila,
             GameType::Rome2 => &self.config.path_rome2,
@@ -227,7 +224,6 @@ impl eframe::App for UgieApp {
             ui.label("3. Engine Parameters :");
             ui.add_space(5.0);
 
-            // Tanda tanya putih, agak gede, posisi kanan angka
             let help_icon = |ui: &mut egui::Ui, text: &str| {
                 ui.add(egui::Label::new(
                     egui::RichText::new(" (?)")
@@ -240,7 +236,6 @@ impl eframe::App for UgieApp {
             egui::Frame::canvas(ui.style()).show(ui, |ui| {
                 ui.spacing_mut().item_spacing = egui::vec2(10.0, 10.0);
                 egui::Grid::new("slider_grid").num_columns(2).spacing([15.0, 12.0]).show(ui, |ui| {
-                    
                     ui.label("Minimum Threshold:");
                     ui.horizontal(|ui| {
                         if ui.add(egui::Slider::new(&mut self.val_min, 1.0..=15.0).step_by(1.0)).changed() {
@@ -357,7 +352,6 @@ impl eframe::App for UgieApp {
 }
 
 fn main() -> eframe::Result<()> {
-    // Logic untuk load Logo.png ke window icon (Pojok kiri atas)
     let icon = image::load_from_memory(include_bytes!("../assets/Icon/Logo.png"))
         .map(|img| {
             let img = img.to_rgba8();
@@ -374,7 +368,7 @@ fn main() -> eframe::Result<()> {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([550.0, 720.0])
             .with_resizable(false)
-            .with_icon(std::sync::Arc::new(icon)) // Icon terpasang disini
+            .with_icon(std::sync::Arc::new(icon))
             .with_position(egui::pos2(500.0, 150.0)),
         ..Default::default()
     };
@@ -386,4 +380,3 @@ fn main() -> eframe::Result<()> {
             Ok(Box::new(UgieApp::load()))
         }),
     )
-}

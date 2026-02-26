@@ -1,11 +1,7 @@
-// =============================================================================
-//                  --- Engine Revolution Patcher (Fixed) ---
-// =============================================================================
 use crate::core::{GameParams, GameType};
 use std::fs;
 use std::path::PathBuf;
 
-// --- 1. Scanner Otomatis (Untuk Sinkronisasi Slider) ---
 pub fn detect_all_values(game: GameType, path: &PathBuf) -> Result<GameParams, String> {
     let file_target = "empire.retail.dll";
     let target_path = path.join(file_target);
@@ -31,7 +27,6 @@ pub fn detect_all_values(game: GameType, path: &PathBuf) -> Result<GameParams, S
     })
 }
 
-// --- 2. Apply Patch (Dengan Logika Backup) ---
 pub fn apply_advanced(
     game: GameType,
     path: &PathBuf,
@@ -43,14 +38,12 @@ pub fn apply_advanced(
     let target_path = path.join("empire.retail.dll");
     let backup_path = path.join("empire.retail.dll.bak");
 
-    // Membuat backup hanya jika belum ada
     if !backup_path.exists() {
         fs::copy(&target_path, &backup_path).map_err(|_| "Error: Failed To Create Backup!".to_string())?;
     }
 
     let mut data = fs::read(&target_path).map_err(|_| "Error: Empire.retail.dll Not Found!".to_string())?;
 
-    // Tulis data ke buffer
     write_to_buffer(&mut data, game, val_min, val_ordered, val_with_ammo, val_no_ammo);
 
     fs::write(&target_path, data).map_err(|_| "Error: File Is In Use!".to_string())?;
@@ -58,12 +51,10 @@ pub fn apply_advanced(
     Ok(format!("Success: {:?} File Patched!", game))
 }
 
-// --- 3. Restore Hardcoded (Tulis Ulang Nilai Default) ---
 pub fn restore_hardcoded(game: GameType, path: &PathBuf) -> Result<String, String> {
     let target_path = path.join("empire.retail.dll");
     let mut data = fs::read(&target_path).map_err(|_| "Error: Cannot Read DLL For Restore!".to_string())?;
 
-    // Tentukan nilai default original
     let (def_min, def_ordered, def_with_ammo, def_no_ammo) = match game {
         GameType::Rome2 => (4.0, 5.0, 100.0, 25.0),
         _ => (4.0, 15.0, 85.0, 25.0),
@@ -76,7 +67,6 @@ pub fn restore_hardcoded(game: GameType, path: &PathBuf) -> Result<String, Strin
     Ok("Success: All Parameters Reset To Factory Default!".to_string())
 }
 
-// --- Helper: Fungsi Penulis Buffer ---
 fn write_to_buffer(data: &mut Vec<u8>, game: GameType, v_min: f32, v_ord: f32, v_ammo: f32, v_no: f32) {
     patch_engine_pattern(data, get_pattern_min(game), v_min, true);
     patch_engine_pattern(data, get_pattern_ordered(game), v_ord, false);
@@ -88,7 +78,6 @@ fn write_to_buffer(data: &mut Vec<u8>, game: GameType, v_min: f32, v_ord: f32, v
     patch_engine_pattern(data, get_pattern_kakak(game), v_no, false);
 }
 
-// --- Helper: Pattern Locators ---
 fn get_pattern_min(game: GameType) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
     match game {
         GameType::Attila => (vec![0x68, 0xA8, 0x34, 0xAC, 0x11, 0x8D, 0x44, 0x24, 0x18], vec![0xC7, 0x44, 0x24, 0x18], vec![0x50, 0x68, 0x64, 0x36, 0xAC, 0x11]),
@@ -121,7 +110,6 @@ fn get_pattern_kakak(game: GameType) -> (Vec<u8>, Vec<u8>, Vec<u8>) {
     }
 }
 
-// --- Core Utils: Scan & Patch ---
 fn scan_single_value(data: &[u8], pattern: (Vec<u8>, Vec<u8>, Vec<u8>), is_int: bool) -> Option<f32> {
     let (head, body, tail) = pattern;
     if head.is_empty() { return None; }
