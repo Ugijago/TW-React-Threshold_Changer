@@ -373,10 +373,11 @@ fn main() -> eframe::Result<()> {
         ..Default::default()
     };
     eframe::run_native(
-        "Total War Idle Threshold Changer v1.0",
+        "Total War Idle Threshold Changer v1.5",
         options,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
             Ok(Box::new(UgieApp::load()))
         }),
     )
+}
